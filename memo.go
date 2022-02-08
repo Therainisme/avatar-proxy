@@ -1,5 +1,7 @@
 package main
 
+import "time"
+
 type Func func(string) (interface{}, error)
 
 type memo struct {
@@ -44,9 +46,10 @@ func (m *memo) listen(f Func) {
 
 	for req := range m.requests {
 		e := cache[req.key]
-		if e == nil {
+		if e == nil || time.Until(e.expire) < 0 {
 			e = &entry{
-				ready: make(chan struct{}),
+				ready:  make(chan struct{}),
+				expire: time.Now().Add(time.Hour),
 			}
 			cache[req.key] = e
 
@@ -58,8 +61,9 @@ func (m *memo) listen(f Func) {
 }
 
 type entry struct {
-	res   result
-	ready chan struct{}
+	res    result
+	expire time.Time
+	ready  chan struct{}
 }
 
 func (e *entry) call(f Func, key string) {

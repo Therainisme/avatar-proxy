@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
 var avatarMemo = NewMemo(func(githubName string) (interface{}, error) {
+	log.Println("requesting avatar for:", githubName)
 	return getAvatar(githubName)
 })
 
