@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -40,7 +41,11 @@ func HandleProxyAvatar(w http.ResponseWriter, r *http.Request) {
 	w.Write(avatarBytes)
 }
 
+var port = flag.String("p", "8080", "the port to listen")
+
 func main() {
+	flag.Parse()
+
 	http.HandleFunc("/", HandleProxyAvatar)
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+*port, nil)
 }
