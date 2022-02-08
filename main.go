@@ -1,10 +1,7 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"regexp"
@@ -21,48 +18,26 @@ func HandleProxyAvatar(w http.ResponseWriter, r *http.Request) {
 	matchArr := re.FindStringSubmatch(r.URL.Path)
 	if len(matchArr) != 1 {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Fprintf(w, "url format err: example <https://avatar.therainisme.com/Therainisme.png>\n")
+		fmt.Fprintf(w, "url format err: example <https://"+r.Host+"/Therainisme.png>\n")
 		return
 	}
 
 	githubName := matchArr[0][1 : len(matchArr[0])-4]
 
-	userResp, err := http.Get("https://api.github.com/users/" + githubName)
-	if err != nil || userResp.StatusCode == http.StatusNotFound {
-		w.WriteHeader(http.StatusNotFound)
-		log.Printf("github name: %s, fetch user info err: %v\n", githubName, err)
-		fmt.Fprintf(w, "fetch user info err: %v\n", err)
-		return
-	}
-	defer userResp.Body.Close()
-
-	var githubResponse GithubResponse
-	respData, err := ioutil.ReadAll(userResp.Body)
+	avatar, err := avatarMemo.Get(githubName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("github name: %s, read user api response body err: %v\n", githubName, err)
+		log.Println(err.Error())
 		return
 	}
 
-	err = json.Unmarshal(respData, &githubResponse)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("github name: %s, parse user api response body err: %v\n", githubName, err)
-		return
-	}
-
-	avatarResp, err := http.Get(githubResponse.AvatarUrl)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		log.Printf("github name: %s, read avatar api response body err: %v\n", githubName, err)
-		return
-	}
-	defer avatarResp.Body.Close()
+	avatarBytes := avatar.([]byte)
 
 	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", avatarResp.ContentLength))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", len(avatarBytes)))
 	w.Header().Set("access-control-allow-origin", "*")
-	io.Copy(w, avatarResp.Body)
+
+	w.Write(avatarBytes)
 }
 
 func main() {
