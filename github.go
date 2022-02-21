@@ -8,6 +8,12 @@ import (
 	"net/http"
 )
 
+type GithubResponse struct {
+	Login     string `json:"login"`
+	Id        int    `json:"id"`
+	AvatarUrl string `json:"avatar_url"`
+}
+
 var avatarMemo = NewMemo(func(githubName string) (interface{}, error) {
 	log.Println("requesting avatar for:", githubName)
 	return getAvatar(githubName)
